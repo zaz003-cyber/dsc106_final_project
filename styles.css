@@ -158,27 +158,72 @@ a:hover { border-bottom-color: var(--accent); }
 }
 .state-tag {
   display: inline-block;
-  padding: 0.05em 0.5em;
-  border-radius: 4px;
+  padding: 0.02em 0.55em 0.06em;
+  border-radius: 3px;
   font-weight: 600;
-  color: white;
+  background: transparent;
+  border: 1.5px solid currentColor;
+  font-variant-numeric: tabular-nums;
 }
-.state-tag.iowa   { background: var(--iowa); }
-.state-tag.kansas { background: var(--kansas); }
-.state-tag.texas  { background: var(--texas); }
+.state-tag.iowa   { color: var(--iowa-dk); }
+.state-tag.kansas { color: var(--kansas-dk); }
+.state-tag.texas  { color: var(--texas-dk); }
 
-/* hero meta — byline + video pill */
+/* hero stats strip — small data badges below the subtitle */
+.hero-stats {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2.25rem 2.5rem;
+}
+.hero-stats li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  border-left: 1px solid var(--rule);
+  padding-left: 1rem;
+}
+.hero-stats li:first-child { border-left: none; padding-left: 0; }
+.hero-stats strong {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.55rem;
+  line-height: 1;
+  color: var(--ink);
+  font-variation-settings: "opsz" 144;
+  font-variant-numeric: tabular-nums;
+}
+.hero-stats span {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  white-space: nowrap;
+}
+
+/* slim editorial divider */
+.hero-rule {
+  border: none;
+  border-top: 1px solid var(--rule);
+  margin: 0 0 2rem;
+  max-width: 360px;
+}
+
+/* hero meta — byline stacked above the video pill */
 .hero-meta {
   display: flex;
-  align-items: center;
-  gap: 1.25rem 2rem;
-  flex-wrap: wrap;
-  margin-bottom: 2.5rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.4rem;
+  margin-bottom: 2.75rem;
 }
 .byline {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.25rem;
 }
 .byline-label {
   font-family: var(--font-mono);
@@ -190,35 +235,44 @@ a:hover { border-bottom-color: var(--accent); }
 .byline-names {
   font-family: var(--font-display);
   font-weight: 500;
-  font-size: 1.05rem;
+  font-size: 1.1rem;
+  line-height: 1.35;
   color: var(--ink);
   font-variation-settings: "opsz" 144;
+}
+.byline-pub {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: var(--ink-mute);
+  margin-top: 0.15rem;
 }
 .video-pill {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.55rem 1.1rem 0.55rem 0.75rem;
+  gap: 0.55rem;
+  padding: 0.55rem 1.15rem 0.55rem 0.55rem;
   background: var(--ink);
   color: var(--bg) !important;
   border-radius: 999px;
   font-family: var(--font-body);
   font-weight: 500;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   border: none !important;
   text-decoration: none;
-  transition: background 150ms ease, transform 150ms ease;
+  transition: background 150ms ease, transform 150ms ease, box-shadow 150ms ease;
 }
 .video-pill:hover {
   background: var(--accent);
   transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(31,78,121,0.22);
 }
 .video-icon {
   display: inline-flex;
   align-items: center; justify-content: center;
-  width: 22px; height: 22px;
+  width: 26px; height: 26px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.14);
   font-size: 0.7rem;
 }
 
