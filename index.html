@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>When the Corn Belt Met the Satellites</title>
+  <meta name="description" content="How MODIS satellite data reveals what state averages have been hiding from us — an interactive exploration of climate and crops across Iowa, Kansas, and Texas." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Libs -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+  <script src="https://cdn.jsdelivr.net/npm/scrollama@3.2.0/build/scrollama.min.js"></script>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ============== HERO ============== -->
+  <section id="hero" class="hero">
+    <div class="hero-bg" aria-hidden="true">
+      <div class="bg-grid"></div>
+    </div>
+    <div class="hero-content">
+      <div class="eyebrow">DSC 106 · Final Project · UC San Diego</div>
+      <h1 class="hero-title">
+        When the <span class="ink-gold">Corn&nbsp;Belt</span> Met the <span class="ink-blue">Satellites</span>
+      </h1>
+      <p class="hero-sub">
+        How MODIS satellite imagery reveals what state averages have been hiding —
+        a county-level journey through climate and crops across
+        <span class="state-tag iowa">Iowa</span>,
+        <span class="state-tag kansas">Kansas</span>, and
+        <span class="state-tag texas">Texas</span>.
+      </p>
+
+      <!-- TODO: replace names with full team names + your YouTube URL once recorded -->
+      <div class="hero-meta">
+        <div class="byline">
+          <span class="byline-label">A project by</span>
+          <span class="byline-names">wby · Peng · zzac</span>
+        </div>
+        <a class="video-pill" href="#TODO-youtube-url" target="_blank" rel="noopener">
+          <span class="video-icon">▶</span>
+          <span>Watch the 2-minute demo</span>
+        </a>
+      </div>
+
+      <div class="hero-cta">
+        <span class="scroll-hint">scroll to begin</span>
+        <div class="scroll-arrow"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== SETUP — meet the three states ============== -->
+  <section id="setup" class="section">
+    <div class="container narrow">
+      <p class="kicker">The Setup</p>
+      <h2 class="display">Three states feed a nation.</h2>
+      <p class="lede">
+        Iowa grows the corn in your tortilla chips. Kansas grows the wheat in your bread.
+        Texas grows the cotton in your t-shirt. Together, they form the
+        engine room of American agriculture — and they are exquisitely sensitive
+        to climate.
+      </p>
+    </div>
+
+    <div class="container wide">
+      <div id="intro-map" class="intro-map"></div>
+    </div>
+
+    <div class="container narrow">
+      <div class="state-cards">
+        <article class="state-card iowa">
+          <div class="crop-icon" data-crop="corn"></div>
+          <h3>Iowa</h3>
+          <p class="crop-name">Corn</p>
+          <ul class="state-stats">
+            <li><span>99</span> counties</li>
+            <li><span>Warm-season</span> crop</li>
+            <li>Peak NDVI in <span>July</span></li>
+          </ul>
+        </article>
+        <article class="state-card kansas">
+          <div class="crop-icon" data-crop="wheat"></div>
+          <h3>Kansas</h3>
+          <p class="crop-name">Winter Wheat</p>
+          <ul class="state-stats">
+            <li><span>105</span> counties</li>
+            <li><span>Cool-season</span> crop</li>
+            <li>Peak NDVI in <span>May</span></li>
+          </ul>
+        </article>
+        <article class="state-card texas">
+          <div class="crop-icon" data-crop="cotton"></div>
+          <h3>Texas</h3>
+          <p class="crop-name">Cotton</p>
+          <ul class="state-stats">
+            <li><span>254</span> counties</li>
+            <li><span>Heat-loving</span> crop</li>
+            <li>Peak NDVI in <span>Aug</span></li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== CONFLICT — the state-average lie ============== -->
+  <section id="conflict" class="section section-tint">
+    <div class="container narrow">
+      <p class="kicker">The Conflict</p>
+      <h2 class="display">But state averages tell a comforting lie.</h2>
+      <p class="lede">
+        When you paint an entire state a single shade of green, you erase the
+        real story. Western Kansas is a desert. Eastern Kansas is humid. A single
+        number cannot describe both — yet that is exactly what most climate
+        dashboards show you.
+      </p>
+    </div>
+
+    <div class="container wide">
+      <div class="reveal-grid">
+        <figure class="reveal-card">
+          <figcaption>
+            <h4>The State View</h4>
+            <p>One number per state. Easy to read, easy to misread.</p>
+          </figcaption>
+          <div id="state-choropleth" class="map-frame"></div>
+        </figure>
+        <figure class="reveal-card highlight">
+          <figcaption>
+            <h4>The County View</h4>
+            <p>458 counties, each with its own climate fingerprint.</p>
+          </figcaption>
+          <div id="county-choropleth-preview" class="map-frame"></div>
+        </figure>
+      </div>
+      <div class="reveal-control">
+        <label for="reveal-var">Variable:</label>
+        <select id="reveal-var">
+          <option value="NDVI">Vegetation Index (NDVI)</option>
+          <option value="LST_Day">Land Surface Temp — Day (°C)</option>
+          <option value="LST_Night">Land Surface Temp — Night (°C)</option>
+          <option value="Precipitation">Precipitation (mm)</option>
+        </select>
+        <label for="reveal-month">Month: <strong id="reveal-month-label">July</strong></label>
+        <input type="range" id="reveal-month" min="1" max="12" value="7" />
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== RESOLUTION — the Time Machine ============== -->
+  <section id="time-machine" class="section">
+    <div class="container narrow">
+      <p class="kicker">The Resolution · Our flagship tool</p>
+      <h2 class="display">A <span class="ink-blue">time machine</span> for America's farms.</h2>
+      <p class="lede">
+        Scroll through seven moments of the agricultural year — then drive the
+        machine yourself. Hover any county to see its entire 12-month story
+        unfold in the panel below.
+      </p>
+    </div>
+
+    <div class="container wide tm-scrolly-wrap">
+      <div class="tm-sticky-stage">
+        <div class="tm-shell">
+
+          <header class="tm-caption" id="tm-caption">
+            <div class="cap-eyebrow">
+              <span id="cap-counter">Scene 1 of 7</span>
+              <span class="cap-sep">·</span>
+              <span id="cap-eyebrow">January</span>
+            </div>
+            <h3 id="cap-title">The world is asleep.</h3>
+            <p  id="cap-body">In winter, the land is dormant across all three states. NDVI hovers near zero everywhere — there is nothing growing to see. But how each state begins its year already hints at the story to come.</p>
+          </header>
+
+          <div class="tm-controls">
+            <div class="tm-control-row">
+              <button id="tm-play" class="play-btn" aria-label="Play animation">
+                <span class="play-icon">▶</span>
+                <span class="play-label">Play the year</span>
+              </button>
+
+              <div class="tm-var-toggle" role="tablist" aria-label="Choose variable">
+                <button class="var-btn active" data-var="NDVI" role="tab">NDVI</button>
+                <button class="var-btn" data-var="LST_Day" role="tab">LST Day</button>
+                <button class="var-btn" data-var="LST_Night" role="tab">LST Night</button>
+                <button class="var-btn" data-var="Precipitation" role="tab">Precip</button>
+              </div>
+
+              <button id="tm-reset" class="tm-reset" aria-label="Replay the story">
+                <span class="reset-icon">↻</span>
+                <span>Replay story</span>
+              </button>
+            </div>
+
+            <div class="tm-control-row">
+              <div class="month-scrubber">
+                <div class="month-ticks" id="month-ticks"></div>
+                <input type="range" id="tm-month" min="1" max="12" value="1" step="1" />
+                <div class="month-label-row">
+                  <span class="month-label" id="tm-month-label">January</span>
+                  <span class="month-helper">drag, or press play</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tm-stage">
+            <div class="tm-map-wrap" id="tm-iowa">
+              <div class="tm-map-header"><h4>Iowa</h4><span class="muted">Corn</span></div>
+              <div class="tm-map"></div>
+            </div>
+            <div class="tm-map-wrap" id="tm-kansas">
+              <div class="tm-map-header"><h4>Kansas</h4><span class="muted">Wheat</span></div>
+              <div class="tm-map"></div>
+            </div>
+            <div class="tm-map-wrap" id="tm-texas">
+              <div class="tm-map-header"><h4>Texas</h4><span class="muted">Cotton</span></div>
+              <div class="tm-map"></div>
+            </div>
+          </div>
+
+          <div class="tm-legend">
+            <div class="legend-band" id="tm-legend"></div>
+            <div class="legend-axis" id="tm-legend-axis"></div>
+          </div>
+
+          <div class="tm-hover-panel" id="tm-hover">
+            <div class="hover-placeholder">Hover any county to reveal its full-year story →</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Invisible scroll triggers — each provides 90vh of scroll length per scene -->
+      <div class="tm-steps" id="tm-steps">
+        <div class="tm-step" data-scene="0"></div>
+        <div class="tm-step" data-scene="1"></div>
+        <div class="tm-step" data-scene="2"></div>
+        <div class="tm-step" data-scene="3"></div>
+        <div class="tm-step" data-scene="4"></div>
+        <div class="tm-step" data-scene="5"></div>
+        <div class="tm-step tm-step-final" data-scene="6"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== LIFECYCLE — radial crop calendar ============== -->
+  <section id="lifecycle" class="section section-dark">
+    <div class="container narrow">
+      <p class="kicker">The Lifecycle</p>
+      <h2 class="display light">Every crop draws its own ring.</h2>
+      <p class="lede light">
+        Read the year clockwise from January. The further the line from center,
+        the greener the land. Notice how corn explodes upward in July, wheat
+        crests early and crashes at harvest, while cotton holds steady through
+        the brutal Texas heat.
+      </p>
+    </div>
+
+    <div class="container wide">
+      <div id="radial-calendar" class="radial-calendar"></div>
+      <div class="legend-row">
+        <span class="lg-group">
+          <span class="lg-dot iowa"></span> Iowa · Corn
+          <span class="lg-dot kansas"></span> Kansas · Wheat
+          <span class="lg-dot texas"></span> Texas · Cotton
+        </span>
+        <span class="lg-divider"></span>
+        <span class="lg-group muted-rings">
+          <span class="lg-ring"></span> Dashed rings:
+          <span class="lg-pill">0.3 Emergence</span>
+          <span class="lg-pill">0.5 Mid</span>
+          <span class="lg-pill">0.7 Peak Greenness</span>
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== SCATTER — relationships ============== -->
+  <section id="scatter" class="section">
+    <div class="container narrow">
+      <p class="kicker">The Relationships</p>
+      <h2 class="display">Heat and rain do not love crops equally.</h2>
+      <p class="lede">
+        Each dot is one state in one month. Watch what happens when you isolate
+        a single crop — the universal-looking relationship between climate and
+        vegetation fractures into three very different stories.
+      </p>
+    </div>
+
+    <div class="container wide">
+      <div class="state-filter" id="scatter-filter" role="tablist">
+        <button class="filter-btn active" data-state="all" role="tab">All States</button>
+        <button class="filter-btn" data-state="Iowa" role="tab">Iowa (Corn)</button>
+        <button class="filter-btn" data-state="Kansas" role="tab">Kansas (Wheat)</button>
+        <button class="filter-btn" data-state="Texas" role="tab">Texas (Cotton)</button>
+      </div>
+
+      <div class="scatter-grid">
+        <figure class="scatter-card">
+          <h4>Temperature vs Vegetation</h4>
+          <p class="figure-sub">Land Surface Temp — Day (°C) on x-axis · NDVI on y-axis</p>
+          <div id="scatter-lst" class="scatter-frame"></div>
+        </figure>
+        <figure class="scatter-card">
+          <h4>Rainfall vs Vegetation</h4>
+          <p class="figure-sub">Precipitation (mm) on x-axis · NDVI on y-axis</p>
+          <div id="scatter-precip" class="scatter-frame"></div>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== DAY-NIGHT — diverging LST ============== -->
+  <section id="day-night" class="section section-tint">
+    <div class="container narrow">
+      <p class="kicker">A Hidden Variable</p>
+      <h2 class="display">Crops feel the night too.</h2>
+      <p class="lede">
+        Plants respire after dark. The wider the day-night temperature gap, the
+        more energy they burn just to stay alive — energy that should have gone
+        into building grain or fiber. Below, each bar splits the day-time heat
+        from the night-time chill for every month.
+      </p>
+    </div>
+    <div class="container wide">
+      <div id="day-night-chart" class="day-night-chart"></div>
+    </div>
+  </section>
+
+  <!-- ============== TAKEAWAYS ============== -->
+  <section id="takeaways" class="section">
+    <div class="container narrow">
+      <p class="kicker">So what did we learn?</p>
+      <h2 class="display">Three findings, one warning.</h2>
+    </div>
+    <div class="container wide">
+      <div class="takeaway-grid">
+        <article class="takeaway-card">
+          <div class="big-number">01</div>
+          <h3>State averages can lie by 0.4 NDVI.</h3>
+          <p>
+            In July, eastern Iowa hits a near-rainforest 0.85 while a handful of
+            its own western counties never break 0.45. Reporting a single state
+            value masks a difference larger than the gap between a wheat field
+            and a corn field.
+          </p>
+        </article>
+        <article class="takeaway-card">
+          <div class="big-number">02</div>
+          <h3>Temperature alone does not explain greenness.</h3>
+          <p>
+            Texas is hotter than Iowa every month — yet Iowa's NDVI peaks higher.
+            Crop choice, soil moisture, and the timing of rain matter as much
+            as raw heat. The same 30 °C means thriving corn in Iowa and stressed
+            cotton in West Texas.
+          </p>
+        </article>
+        <article class="takeaway-card">
+          <div class="big-number">03</div>
+          <h3>The night is where stress hides.</h3>
+          <p>
+            Texas night-time LST stays above 20 °C all summer, robbing cotton
+            of its recovery window. As nights warm faster than days under climate
+            change, this hidden cost will grow — and satellite NDVI will see it
+            before any farmer does.
+          </p>
+        </article>
+      </div>
+    </div>
+
+    <div class="container narrow process-box">
+      <h3 class="process-heading">What we built · What was hard</h3>
+      <div class="process-grid">
+        <div>
+          <h4>What we have done</h4>
+          <ul>
+            <li>Pulled MODIS monthly NDVI, LST (day &amp; night), and precipitation for every county in Iowa, Kansas, and Texas using Google Earth Engine.</li>
+            <li>Built a six-section scrollytelling page in D3.js, including a state-vs-county reveal, a 458-county time machine with sparkline hover, a radial crop calendar, paired scatter plots with crop-stage annotations, and a day-vs-night LST chart.</li>
+            <li>Authored an And-But-Therefore narrative connecting satellite observation to crop-specific lifecycle knowledge.</li>
+          </ul>
+        </div>
+        <div>
+          <h4>What was the most challenging</h4>
+          <ul>
+            <li>Designing interactions that <em>reveal patterns a static plot cannot</em> — especially the per-county sparkline-on-hover, which lets readers compare one county's full-year trajectory against the regional choropleth without leaving the page.</li>
+            <li>Keeping three side-by-side maps (Iowa, Kansas, Texas) visually balanced when Texas is 8× larger than Iowa: each map is independently fit to its bounds while sharing a common color scale.</li>
+            <li>Writing prose that turns satellite numbers into a story a non-specialist can actually feel.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============== FOOTER ============== -->
+  <footer class="site-footer">
+    <div class="container narrow">
+      <p class="footer-credits">
+        Built with <a href="https://d3js.org/" target="_blank" rel="noopener">D3.js</a>
+        ·
+        Data: <a href="https://lpdaac.usgs.gov/products/mod13a3v061/" target="_blank" rel="noopener">NASA MODIS</a>
+        via <a href="https://earthengine.google.com/" target="_blank" rel="noopener">Google Earth Engine</a>
+        ·
+        County geometry from <a href="https://github.com/topojson/us-atlas" target="_blank" rel="noopener">us-atlas</a>
+      </p>
+      <p class="footer-meta">DSC 106 · Spring 2026 · UC San Diego</p>
+    </div>
+  </footer>
+
+  <!-- Tooltip element (shared) -->
+  <div id="tooltip" class="tooltip" aria-hidden="true"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+import ee
+import pandas as pd
+
+ee.Authenticate()
+ee.Initialize(project="ee-bawan")
+
+# County layer: https://developers.google.com/earth-engine/datasets/catalog/TIGER_2018_Counties
+counties = ee.FeatureCollection("TIGER/2018/Counties")
+
+state_fips = {
+    "Iowa": "19",
+    "Kansas": "20",
+    "Texas": "48",
+}
+
+selected_counties = counties.filter(
+    ee.Filter.inList("STATEFP", list(state_fips.values()))
+)
+
+start_date = "2023-01-01"
+end_date = "2023-12-31"
+
+modis_ndvi = (
+    ee.ImageCollection("MODIS/061/MOD13A2")
+    .filterDate(start_date, end_date)
+    .select("NDVI")
+)
+
+modis_lst = (
+    ee.ImageCollection("MODIS/061/MOD11A2")
+    .filterDate(start_date, end_date)
+    .select(["LST_Day_1km", "LST_Night_1km"])
+)
+
+precip = (
+    ee.ImageCollection("UCSB-CHG/CHIRPS/DAILY")
+    .filterDate(start_date, end_date)
+    .select("precipitation")
+)
+
+
+def add_state_name(feature):
+    statefp = feature.get("STATEFP")
+
+    state_name = ee.Dictionary({
+        "19": "Iowa",
+        "20": "Kansas",
+        "48": "Texas",
+    }).get(statefp)
+
+    return feature.set("state", state_name)
+
+
+selected_counties = selected_counties.map(add_state_name)
+
+
+def get_monthly_county_mean(collection, counties_fc, band_name, output_name, scale):
+    results = []
+
+    for month in range(1, 13):
+        monthly_image = (
+            collection
+            .filter(ee.Filter.calendarRange(month, month, "month"))
+            .mean()
+        )
+
+        county_stats = monthly_image.reduceRegions(
+            collection=counties_fc,
+            reducer=ee.Reducer.mean(),
+            scale=scale,
+            tileScale=4,
+        )
+
+        county_stats = county_stats.map(
+            lambda f: f.set({
+                "month": month,
+                output_name: f.get("mean"),
+            }).select(
+                ["state", "NAME", "GEOID", "STATEFP", "month", output_name],
+                ["state", "county", "GEOID", "STATEFP", "month", output_name],
+            )
+        )
+
+        results.extend(county_stats.getInfo()["features"])
+
+    rows = [feature["properties"] for feature in results]
+    return rows
+
+
+def get_monthly_county_precip_sum(collection, counties_fc, band_name, output_name, scale):
+    results = []
+
+    for month in range(1, 13):
+        monthly_image = (
+            collection
+            .filter(ee.Filter.calendarRange(month, month, "month"))
+            .sum()
+        )
+
+        county_stats = monthly_image.reduceRegions(
+            collection=counties_fc,
+            reducer=ee.Reducer.mean(),
+            scale=scale,
+            tileScale=4,
+        )
+
+        county_stats = county_stats.map(
+            lambda f: f.set({
+                "month": month,
+                output_name: f.get("mean"),
+            }).select(
+                ["state", "NAME", "GEOID", "STATEFP", "month", output_name],
+                ["state", "county", "GEOID", "STATEFP", "month", output_name],
+            )
+        )
+
+        results.extend(county_stats.getInfo()["features"])
+
+    rows = [feature["properties"] for feature in results]
+    return rows
+
+
+ndvi_data = get_monthly_county_mean(
+    modis_ndvi,
+    selected_counties,
+    band_name="NDVI",
+    output_name="NDVI",
+    scale=1000,
+)
+
+lst_day_data = get_monthly_county_mean(
+    modis_lst.select("LST_Day_1km"),
+    selected_counties,
+    band_name="LST_Day_1km",
+    output_name="LST_Day",
+    scale=1000,
+)
+
+lst_night_data = get_monthly_county_mean(
+    modis_lst.select("LST_Night_1km"),
+    selected_counties,
+    band_name="LST_Night_1km",
+    output_name="LST_Night",
+    scale=1000,
+)
+
+precip_data = get_monthly_county_precip_sum(
+    precip,
+    selected_counties,
+    band_name="precipitation",
+    output_name="Precipitation",
+    scale=5000,
+)
+
+ndvi_df = pd.DataFrame(ndvi_data)
+lst_day_df = pd.DataFrame(lst_day_data)
+lst_night_df = pd.DataFrame(lst_night_data)
+precip_df = pd.DataFrame(precip_data)
+
+df = (
+    ndvi_df
+    .merge(lst_day_df, on=["state", "county", "GEOID", "STATEFP", "month"], how="left")
+    .merge(lst_night_df, on=["state", "county", "GEOID", "STATEFP", "month"], how="left")
+    .merge(precip_df, on=["state", "county", "GEOID", "STATEFP", "month"], how="left")
+)
+
+# Scale MODIS NDVI
+df["NDVI"] = df["NDVI"] * 0.0001
+
+# Convert MODIS LST from scaled Kelvin to Celsius
+df["LST_Day"] = df["LST_Day"] * 0.02 - 273.15
+df["LST_Night"] = df["LST_Night"] * 0.02 - 273.15
+
+crop_map = {
+    "Iowa": "Corn",
+    "Kansas": "Wheat",
+    "Texas": "Cotton",
+}
+
+df["state_crop"] = df["state"].map(lambda x: f"{x} ({crop_map[x]})")
+
+print(df)
