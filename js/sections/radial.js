@@ -171,24 +171,41 @@ export function initRadial(ctx) {
 
     // ---- Crop-peak labels (placed outside outer ring so they don't
     //      collide with curves or month labels) ----
-    STATES.forEach(s => {
+    //
+    // Two states share a peak month this year (Iowa Corn & Kansas Wheat
+    // both peak in July), so we group peaks by month and stack the
+    // same-month entries radially — outer ring = higher NDVI — to keep
+    // every state's peak label readable. The first label sits 30px
+    // outside outerR (just past the month label ring), each additional
+    // same-month entry adds 22px outward.
+    const peakEntries = STATES.map(s => {
       const arr = ctx.index.stateByName.get(s);
-      const color = STATE_COLORS[s];
       const peak = arr.reduce((acc, d) => (d.NDVI > acc.NDVI ? d : acc), arr[0]);
-      const a = angle(peak.month);
-      // place label just outside the outer month-label ring, biased so
-      // labels for different peak months don't stack
-      const labelR = outerR + 56;
-      const lx = labelR * Math.sin(a);
-      const ly = -labelR * Math.cos(a);
-      g.append('text')
-        .attr('x', lx).attr('y', ly)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'middle')
-        .attr('font-family', 'Fraunces, Georgia, serif')
-        .attr('font-size', 13).attr('font-weight', 600).attr('font-style', 'italic')
-        .attr('fill', color)
-        .text(`${STATE_CROP[s]} peak · ${MONTH_SHORT[peak.month - 1]}`);
+      return { state: s, color: STATE_COLORS[s], peak };
+    });
+
+    const peakGroups = d3.group(peakEntries, p => p.peak.month);
+
+    peakGroups.forEach((group, month) => {
+      // Within a same-month group, sort ascending by NDVI so the
+      // smaller-peak label sits inner (closer to the chart) and the
+      // larger-peak label sits outer (further from centre).
+      group.sort((a, b) => a.peak.NDVI - b.peak.NDVI);
+
+      const a = angle(month);
+      group.forEach((p, i) => {
+        const labelR = outerR + 30 + i * 22;
+        const lx = labelR * Math.sin(a);
+        const ly = -labelR * Math.cos(a);
+        g.append('text')
+          .attr('x', lx).attr('y', ly)
+          .attr('text-anchor', 'middle')
+          .attr('dominant-baseline', 'middle')
+          .attr('font-family', 'Fraunces, Georgia, serif')
+          .attr('font-size', 13).attr('font-weight', 600).attr('font-style', 'italic')
+          .attr('fill', p.color)
+          .text(`${STATE_CROP[p.state]} peak · ${MONTH_SHORT[month - 1]}`);
+      });
     });
 
     // ---- Delaunay hover surface ----
