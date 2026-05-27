@@ -119,6 +119,28 @@ export function globalExtent(countyData, varKey) {
   return d3.extent(values);
 }
 
+// Pick a county-boundary stroke that contrasts against the fill underneath.
+// Light fills get a dark stroke; dark fills get a light stroke — so the
+// county outline is always visible regardless of where the data lands on
+// the colour ramp. Uses CIE-Lab L (perceptual lightness, 0–100).
+export function adaptiveStroke(fillColor) {
+  if (!fillColor) return 'rgba(0,0,0,0.35)';
+  const lab = d3.lab(d3.color(fillColor));
+  return lab.l > 62 ? 'rgba(28,28,28,0.55)' : 'rgba(255,255,255,0.78)';
+}
+
+// Pick a text fill + halo stroke that stays legible on any fill background.
+// Returns {fill, stroke} suitable for SVG <text> with paint-order: stroke.
+// Lab L > 60 → dark fill on light background. L ≤ 60 → light fill on dark.
+export function textOnBg(fillColor) {
+  if (!fillColor) return { fill: '#1A1A1A', stroke: 'rgba(255,255,255,0.85)' };
+  const lab = d3.lab(d3.color(fillColor));
+  if (lab.l > 60) {
+    return { fill: '#1A1A1A', stroke: 'rgba(255,255,255,0.85)' };
+  }
+  return   { fill: '#FFFFFF', stroke: 'rgba(0,0,0,0.45)' };
+}
+
 // ---------- Number coercion when loading CSV ----------
 export function coerceCounty(d) {
   return {

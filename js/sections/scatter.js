@@ -22,6 +22,9 @@ const CHARTS = [
     xKey: 'Precipitation',
     xLabel: 'Precipitation (mm)',
     xFmt: d => d3.format('.0f')(d),
+    xMin: 0,
+    xMax: 140,
+    xTicks: [20, 40, 60, 80, 100, 120, 140],
   },
 ];
 
@@ -36,7 +39,10 @@ export function initScatter(ctx) {
       document.querySelectorAll('#scatter-filter .filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       filter = btn.dataset.state;
-      renderers.forEach(r => r.update(filter));
+      // Rebuild so axes re-zoom to the new filter's data range — when
+      // a single state is selected, the x-axis tightens to just that
+      // state's range, giving each dot far more pixel space.
+      renderers.forEach(r => r.rebuild(filter));
     });
   });
 
@@ -49,26 +55,44 @@ export function initScatter(ctx) {
 
 function makeScatter(cfg, ctx) {
   const el = document.getElementById(cfg.id);
-  let svg, gCloud, gDots, gAnnot, gAxes, x, y, m;
+  let svg, gCloud, gTraj, gLink, gTruth, gDots, gAnnot, gAxes, x, y, m;
+  let currentFilter = 'all';
 
-  function rebuild() {
+  function rebuild(filter = currentFilter) {
+    currentFilter = filter;
     el.innerHTML = '';
     const w = el.clientWidth;
     const h = el.clientHeight;
-    m = { t: 16, r: 24, b: 42, l: 48 };
+    m = { t: 16, r: 24, b: 46, l: 52 };
 
     svg = d3.select(el).append('svg')
       .attr('viewBox', `0 0 ${w} ${h}`)
       .attr('width', '100%').attr('height', '100%');
 
-    // domain across ALL county data so axes don't jitter on filter
-    const allX = ctx.countyData.map(d => d[cfg.xKey]).filter(Number.isFinite);
-    const allY = ctx.countyData.map(d => d.NDVI).filter(Number.isFinite);
+    // Filter-aware domain: when a single state is selected we tighten
+    // the x-axis to that state's data range so each dot gets way more
+    // pixel space. "All States" keeps the full county-data range so
+    // the comparative cloud remains comparable.
+    const filteredData = filter === 'all'
+      ? ctx.countyData
+      : ctx.countyData.filter(d => d.state === filter);
+
+    const xVals = filteredData.map(d => d[cfg.xKey]).filter(Number.isFinite);
+    const yVals = filteredData.map(d => d.NDVI).filter(Number.isFinite);
+
+    // Per-chart domain overrides — used to keep the precip axis on
+    // fixed 0–140mm with tick marks every 20mm (a few county outliers
+    // above 140mm would otherwise stretch the axis).
+    let xExtent = d3.extent(xVals);
+    if (cfg.xMin !== undefined) xExtent[0] = cfg.xMin;
+    if (cfg.xMax !== undefined) xExtent[1] = cfg.xMax;
+
     x = d3.scaleLinear()
-      .domain(d3.extent(allX)).nice()
+      .domain(xExtent)
       .range([m.l, w - m.r]);
+    if (cfg.xTicks === undefined) x.nice();
     y = d3.scaleLinear()
-      .domain([Math.max(0, d3.min(allY)), Math.min(1, d3.max(allY))]).nice()
+      .domain([Math.max(0, d3.min(yVals)), Math.min(1, d3.max(yVals))]).nice()
       .range([h - m.b, m.t]);
 
     // grid
@@ -80,8 +104,11 @@ function makeScatter(cfg, ctx) {
 
     // axes
     gAxes = svg.append('g');
+    const xAxis = d3.axisBottom(x).tickFormat(cfg.xFmt).tickSizeOuter(0);
+    if (cfg.xTicks) xAxis.tickValues(cfg.xTicks);
+    else            xAxis.ticks(6);
     gAxes.append('g').attr('transform', `translate(0,${h - m.b})`)
-      .call(d3.axisBottom(x).ticks(6).tickFormat(cfg.xFmt).tickSizeOuter(0))
+      .call(xAxis)
       .attr('font-family', 'JetBrains Mono, monospace')
       .attr('font-size', 11).attr('color', '#8A8A8A');
     gAxes.append('g').attr('transform', `translate(${m.l},0)`)
@@ -124,12 +151,17 @@ function makeScatter(cfg, ctx) {
     });
 
     gCloud = svg.append('g').attr('class', 'cloud');
-    gDots  = svg.append('g').attr('class', 'dots');
+    gTraj  = svg.append('g').attr('class', 'traj');
+    gLink  = svg.append('g').attr('class', 'link');
+    gTruth = svg.append('g').attr('class', 'truth');   // small dots at exact (x,y)
+    gDots  = svg.append('g').attr('class', 'dots');     // big labelled bubbles (dodged)
 
     update(currentFilter);
   }
 
-  let currentFilter = 'all';
+  const DOT_R = 8;             // slightly smaller now charts are bigger
+  const COLLIDE_R = 9.5;       // collision radius (just slightly > DOT_R)
+
   function update(filter) {
     currentFilter = filter;
 
@@ -147,27 +179,75 @@ function makeScatter(cfg, ctx) {
           .attr('r', 1.6)
           .attr('fill', d => STATE_COLORS[d.state])
           .attr('fill-opacity', 0)
-          .call(en => en.transition().duration(380).attr('fill-opacity', 0.16)),
+          .call(en => en.transition().duration(380).attr('fill-opacity', 0.14)),
         update => update.transition().duration(280)
           .attr('cx', d => x(d[cfg.xKey]))
           .attr('cy', d => y(d.NDVI))
-          .attr('fill-opacity', 0.16),
+          .attr('fill-opacity', 0.14),
         exit => exit.transition().duration(180).attr('fill-opacity', 0).remove()
       );
 
-    // ---- Foreground: state-level dots with month letters ----
+    // ---- Seasonal trajectory line per state (chronological path) ----
+    const statesShown = filter === 'all'
+      ? STATES
+      : (STATES.includes(filter) ? [filter] : []);
+
+    const trajData = statesShown.map(s => {
+      const arr = ctx.stateData
+        .filter(d => d.state === s)
+        .sort((a, b) => a.month - b.month);
+      return { state: s, points: arr };
+    });
+
+    const lineGen = d3.line()
+      .x(d => x(d[cfg.xKey]))
+      .y(d => y(d.NDVI))
+      .curve(d3.curveCatmullRom.alpha(0.5));
+
+    gTraj.selectAll('path.traj-line')
+      .data(trajData, d => d.state)
+      .join(
+        enter => enter.append('path')
+          .attr('class', 'traj-line')
+          .attr('fill', 'none')
+          .attr('stroke', d => STATE_COLORS[d.state])
+          .attr('stroke-width', 1.6)
+          .attr('stroke-opacity', 0)
+          .attr('stroke-linecap', 'round')
+          .attr('stroke-linejoin', 'round')
+          .attr('d', d => lineGen(d.points))
+          .call(en => en.transition().duration(450).attr('stroke-opacity', 0.55)),
+        update => update.transition().duration(380)
+          .attr('stroke', d => STATE_COLORS[d.state])
+          .attr('d', d => lineGen(d.points))
+          .attr('stroke-opacity', 0.55),
+        exit => exit.transition().duration(200).attr('stroke-opacity', 0).remove()
+      );
+
+    // ---- Foreground: state-level dots placed at EXACT (x, y) ----
+    // No dodging, no displacement, no leader lines. Each labelled bubble
+    // sits exactly where its data says it should. If two bubbles overlap,
+    // they overlap — that is itself a truthful signal about how close the
+    // underlying values are. Colour + white stroke keep stacked bubbles
+    // visually distinguishable; hover reveals exact values per point.
     const stateDots = filter === 'all'
       ? ctx.stateData
       : ctx.stateData.filter(d => d.state === filter);
 
+    // Sort by Y descending so dots with HIGHER NDVI render LAST, i.e.
+    // appear on top. This means when bubbles stack the higher-value one
+    // is visible — a deterministic, defensible z-order rule.
+    const sortedDots = [...stateDots].sort((a, b) => a.NDVI - b.NDVI);
+
     const sel = gDots.selectAll('g.state-dot')
-      .data(stateDots, d => d.state + '|' + d.month);
+      .data(sortedDots, d => d.state + '|' + d.month);
 
     const ent = sel.enter().append('g')
       .attr('class', 'state-dot')
       .style('cursor', 'pointer')
       .on('mouseenter', function (event, d) {
-        d3.select(this).select('circle').transition().duration(120).attr('r', 13);
+        d3.select(this).raise();   // bring hovered to top
+        d3.select(this).select('circle').transition().duration(120).attr('r', DOT_R + 3);
         showTip(`
           <div class="tt-title" style="color:${STATE_COLORS_DARK[d.state]}">${d.state} · ${STATE_CROP[d.state]}</div>
           <div class="tt-row"><span class="lbl">Month</span><span>${MONTH_NAMES[d.month - 1]}</span></div>
@@ -177,25 +257,27 @@ function makeScatter(cfg, ctx) {
       })
       .on('mousemove', moveTip)
       .on('mouseleave', function () {
-        d3.select(this).select('circle').transition().duration(120).attr('r', 10);
+        d3.select(this).select('circle').transition().duration(120).attr('r', DOT_R);
         hideTip();
       });
     ent.append('circle')
-      .attr('r', 10)
+      .attr('r', DOT_R)
       .attr('fill', d => STATE_COLORS[d.state])
-      .attr('stroke', d => STATE_COLORS_DARK[d.state])
-      .attr('stroke-width', 1.2);
+      .attr('stroke', '#FFFFFF')       // white stroke separates stacked dots
+      .attr('stroke-width', 1.6)
+      .attr('fill-opacity', 0.96);
     ent.append('text')
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'central')
       .attr('font-family', 'JetBrains Mono, monospace')
-      .attr('font-size', 10).attr('font-weight', 600)
+      .attr('font-size', 9.5).attr('font-weight', 700)
       .attr('fill', 'white')
+      .attr('pointer-events', 'none')
       .text(d => MONTH_LETTER[d.month - 1]);
 
     ent.attr('transform', d => `translate(${x(d[cfg.xKey])}, ${y(d.NDVI)})`);
 
-    sel.transition().duration(380)
+    sel.transition().duration(420)
       .attr('transform', d => `translate(${x(d[cfg.xKey])}, ${y(d.NDVI)})`);
 
     sel.exit().transition().duration(180).attr('opacity', 0).remove();

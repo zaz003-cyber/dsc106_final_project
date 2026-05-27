@@ -5,7 +5,8 @@
 import {
   STATES, STATE_FP, FP_TO_STATE, STATE_COLORS_DARK, STATE_CROP,
   VARIABLES, MONTH_NAMES, MONTH_SHORT,
-  colorScaleFor, globalExtent, showTip, moveTip, hideTip
+  colorScaleFor, globalExtent, adaptiveStroke,
+  showTip, moveTip, hideTip
 } from '../utils.js';
 
 // ---------- Scrollytelling scenes ----------
@@ -23,16 +24,16 @@ const SCENES = [
     body: 'By March, Texas counties already average 27 °C while Iowa hovers near freezing. The 17-degree gradient between Iowa and Texas is the largest of the entire year — and it dictates when each crop can begin.',
   },
   {
-    month: 5, varKey: 'NDVI', focus: 'Kansas',
-    eyebrow: 'May · Vegetation',
-    title: 'Kansas wheat is first to peak.',
-    body: 'Winter wheat planted last September is the only crop already mature. Kansas counties climb past NDVI 0.48 — far ahead of Iowa corn fields, which are still emerging seedlings.',
+    month: 4, varKey: 'NDVI', focus: 'Texas',
+    eyebrow: 'April · Vegetation',
+    title: 'Eastern Texas peaks first.',
+    body: 'Long before Iowa\'s corn has sprouted, eastern Texas counties already hit NDVI 0.79 — rainforest-level greenness. The very same state\'s western counties sit at just 0.15. A 0.64 gap inside a single state foreshadows the bigger lesson: state averages are fiction.',
   },
   {
     month: 7, varKey: 'NDVI', focus: 'Iowa',
     eyebrow: 'July · Vegetation',
     title: 'The Iowa corn explosion.',
-    body: 'July is corn\'s moment. Eastern Iowa counties shoot past NDVI 0.85 — rainforest-level greenness — while western Iowa trails near 0.55. A single state average of 0.84 hides a 0.30 gap inside the state itself.',
+    body: 'July is corn\'s moment. Most Iowa counties cross NDVI 0.85 — rainforest-level greenness — and even the lowest county still sits at 0.73. This is the Corn Belt\'s reputation for uniformity earned in real numbers.',
   },
   {
     month: 8, varKey: 'LST_Day', focus: 'Texas',
@@ -82,19 +83,32 @@ export function initTimeMachine(ctx) {
   // ---------- Build each state map ----------
   function buildStateMap(stateName) {
     const wrapEl = document.querySelector(`#tm-${stateName.toLowerCase()} .tm-map`);
+    if (!wrapEl) return;
     wrapEl.innerHTML = '';
-    const w = wrapEl.clientWidth;
-    const h = wrapEl.clientHeight;
+
+    // Use getBoundingClientRect — more reliable than clientWidth/Height
+    // in scrolly/sticky contexts. Fall back to sane defaults if layout
+    // hasn't settled yet (this is what was breaking Iowa).
+    const rect = wrapEl.getBoundingClientRect();
+    let w = Math.round(rect.width);
+    let h = Math.round(rect.height);
+    if (w < 60) w = 240;
+    if (h < 60) h = 220;
 
     const fc = ctx.geo.countiesByState[stateName];
     const outline = ctx.geo.stateOutlines[stateName];
 
+    if (!fc || !fc.features || fc.features.length === 0) {
+      console.warn(`[time-machine] no county features for ${stateName}`);
+      return;
+    }
+
     const svg = d3.select(wrapEl).append('svg')
       .attr('viewBox', `0 0 ${w} ${h}`)
+      .attr('preserveAspectRatio', 'xMidYMid meet')
       .attr('width', '100%').attr('height', '100%');
 
-    // Project to bounds of this state alone — each map fills its own panel
-    const projection = d3.geoMercator().fitSize([w - 4, h - 4], fc);
+    const projection = d3.geoMercator().fitSize([Math.max(20, w - 4), Math.max(20, h - 4)], fc);
     const path = d3.geoPath(projection);
 
     const gCounties = svg.append('g');
@@ -119,10 +133,42 @@ export function initTimeMachine(ctx) {
   }
 
   function buildAll() {
-    STATES.forEach(buildStateMap);
-    drawLegend();
-    update();
+    // Defer to next animation frame so CSS grid/sticky layout has settled
+    // before we measure container dimensions — fixes Iowa rendering blank
+    // when its column width hadn't resolved at module-init time.
+    requestAnimationFrame(() => {
+      STATES.forEach(buildStateMap);
+      drawLegend();
+      update();
+    });
   }
+
+  // ResizeObserver — if any map container changes size (window resize,
+  // sticky transitions, image-load reflow, ...), rebuild that map only.
+  const ro = new ResizeObserver(entries => {
+    let needsRebuild = false;
+    for (const entry of entries) {
+      const wrapEl = entry.target;
+      const stateName = STATES.find(s =>
+        wrapEl.closest(`#tm-${s.toLowerCase()}`)
+      );
+      if (!stateName) continue;
+      const r = renderers[stateName];
+      const newW = Math.round(entry.contentRect.width);
+      const newH = Math.round(entry.contentRect.height);
+      if (!r || Math.abs(r.w - newW) > 4 || Math.abs(r.h - newH) > 4) {
+        needsRebuild = true;
+      }
+    }
+    if (needsRebuild) {
+      STATES.forEach(buildStateMap);
+      update();
+    }
+  });
+  STATES.forEach(s => {
+    const el = document.querySelector(`#tm-${s.toLowerCase()} .tm-map`);
+    if (el) ro.observe(el);
+  });
 
   // ---------- Update colors ----------
   function update() {
@@ -144,6 +190,10 @@ export function initTimeMachine(ctx) {
         .attr('fill', f => {
           const val = monthLookup.get(String(f.id));
           return Number.isFinite(val) ? color(val) : '#DDD6C7';
+        })
+        .attr('stroke', f => {
+          const val = monthLookup.get(String(f.id));
+          return adaptiveStroke(Number.isFinite(val) ? color(val) : '#DDD6C7');
         });
     });
 

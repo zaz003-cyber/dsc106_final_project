@@ -21,7 +21,7 @@ export function initIntroMap(ctx) {
     // Use AlbersUSA so AK/HI tuck in nicely
     const projection = d3.geoAlbersUsa()
       .fitSize([width, height], ctx.usAll);
-
+0
     const path = d3.geoPath(projection);
 
     // background US states

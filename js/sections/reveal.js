@@ -3,7 +3,8 @@
 // =========================================================
 import {
   STATES, STATE_FP, FP_TO_STATE, VARIABLES, MONTH_NAMES,
-  colorScaleFor, globalExtent, showTip, moveTip, hideTip
+  colorScaleFor, globalExtent, adaptiveStroke, textOnBg,
+  showTip, moveTip, hideTip
 } from '../utils.js';
 
 export function initReveal(ctx) {
@@ -90,18 +91,25 @@ export function initReveal(ctx) {
       .attr('stroke', 'rgba(255,255,255,0.0)')   // hide county strokes in state-mode
       .style('pointer-events', 'none');
 
-    // labels with state-level value
+    // labels with state-level value — text colour adapts to fill darkness
+    // so the label stays readable on every NDVI / temp / precip ramp.
     stateRender.gLabels.selectAll('*').remove();
     STATES.forEach(s => {
       const f = ctx.geo.stateOutlines[s];
       const [cx, cy] = stateRender.path.centroid(f);
       const val = stateValues.get(s);
+      const bgFill = val == null ? '#DDD6C7' : color(val);
+      const t = textOnBg(bgFill);
+
       const txt = stateRender.gLabels.append('text')
         .attr('text-anchor', 'middle')
         .attr('x', cx).attr('y', cy)
         .attr('font-family', 'Fraunces, Georgia, serif')
         .attr('font-size', 13).attr('font-weight', 600)
-        .attr('fill', '#1A1A1A');
+        .attr('fill', t.fill)
+        .attr('stroke', t.stroke)
+        .attr('stroke-width', 3)
+        .attr('paint-order', 'stroke');
       txt.append('tspan').attr('x', cx).attr('dy', '-2').text(s);
       txt.append('tspan')
         .attr('x', cx).attr('dy', '1.1em')
@@ -121,6 +129,10 @@ export function initReveal(ctx) {
       .attr('fill', f => {
         const v = countyValues.get(String(f.id));
         return Number.isFinite(v) ? color(v) : '#DDD6C7';
+      })
+      .attr('stroke', f => {
+        const v = countyValues.get(String(f.id));
+        return adaptiveStroke(Number.isFinite(v) ? color(v) : '#DDD6C7');
       })
       .style('pointer-events', 'auto')
       .on('mousemove', function (event, f) {

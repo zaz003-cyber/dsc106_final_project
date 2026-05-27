@@ -145,7 +145,7 @@ export function initDayNight(ctx) {
         .attr('font-size', 9).attr('color', '#8A8A8A')
         .call(g => g.select('.domain').remove());
       svg.append('g').attr('transform', `translate(${m.l},0)`)
-        .call(d3.axisLeft(y).ticks(5).tickFormat(d => d + '°').tickSize(0))
+        .call(d3.axisLeft(y).ticks(5).tickFormat(d => d + '°C').tickSize(0))
         .attr('font-family', 'JetBrains Mono, monospace')
         .attr('font-size', 9.5).attr('color', '#8A8A8A')
         .call(g => g.select('.domain').remove());
@@ -164,7 +164,7 @@ export function initDayNight(ctx) {
         .attr('font-style', 'italic')
         .attr('font-size', 11).attr('fill', '#1A1A1A')
         .attr('opacity', 0.7)
-        .text(`Δ${maxGapVal.toFixed(0)}°`);
+        .text(`Δ${maxGapVal.toFixed(0)}°C`);
 
       // interactive vertical guide
       const focus = svg.append('g').style('display', 'none');

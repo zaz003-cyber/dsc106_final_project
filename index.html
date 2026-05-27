@@ -326,6 +326,18 @@
           <div id="scatter-precip" class="scatter-frame"></div>
         </figure>
       </div>
+
+      <aside class="method-note">
+        <span class="note-eyebrow">A note on overlapping dots</span>
+        <p>
+          Every labelled bubble is placed at the exact <em>(x, y)</em> of its
+          underlying value — no jittering, no displacement. When two months
+          share nearly identical climate, their dots overlap on purpose. That
+          proximity <em>is</em> the finding: it shows the months were
+          climatologically interchangeable. Hover any bubble to read its
+          exact NDVI, temperature, and precipitation.
+        </p>
+      </aside>
     </div>
   </section>
 
@@ -356,12 +368,12 @@
       <div class="takeaway-grid">
         <article class="takeaway-card">
           <div class="big-number">01</div>
-          <h3>State averages can lie by 0.4 NDVI.</h3>
+          <h3>State averages can lie by 0.6 NDVI.</h3>
           <p>
-            In July, eastern Iowa hits a near-rainforest 0.85 while a handful of
-            its own western counties never break 0.45. Reporting a single state
-            value masks a difference larger than the gap between a wheat field
-            and a corn field.
+            In April, eastern Texas counties hit a near-rainforest 0.79 while
+            western Texas counties never break 0.15. Reporting a single state
+            value masks a 0.64 gap inside <em>one state</em> — wider than any
+            difference between Iowa, Kansas, and Texas as wholes.
           </p>
         </article>
         <article class="takeaway-card">
@@ -413,15 +425,29 @@
   <!-- ============== FOOTER ============== -->
   <footer class="site-footer">
     <div class="container narrow">
-      <p class="footer-credits">
-        Built with <a href="https://d3js.org/" target="_blank" rel="noopener">D3.js</a>
-        ·
-        Data: <a href="https://lpdaac.usgs.gov/products/mod13a3v061/" target="_blank" rel="noopener">NASA MODIS</a>
-        via <a href="https://earthengine.google.com/" target="_blank" rel="noopener">Google Earth Engine</a>
-        ·
-        County geometry from <a href="https://github.com/topojson/us-atlas" target="_blank" rel="noopener">us-atlas</a>
-      </p>
-      <p class="footer-meta">DSC 106 · Spring 2026 · UC San Diego</p>
+      <p class="footer-credits">Built with <a href="https://d3js.org/" target="_blank" rel="noopener">D3.js</a> and <a href="https://github.com/russellgoldenberg/scrollama" target="_blank" rel="noopener">Scrollama</a>.</p>
+
+      <dl class="footer-sources">
+        <dt>Vegetation Index (NDVI)</dt>
+        <dd><a href="https://lpdaac.usgs.gov/products/mod13a3v061/" target="_blank" rel="noopener">NASA MODIS MOD13A3</a> — monthly, 1 km</dd>
+
+        <dt>Land Surface Temperature (Day &amp; Night)</dt>
+        <dd><a href="https://lpdaac.usgs.gov/products/mod11a2v061/" target="_blank" rel="noopener">NASA MODIS MOD11A2</a> — 8-day, 1 km</dd>
+
+        <dt>Precipitation</dt>
+        <dd><a href="https://www.chc.ucsb.edu/data/chirps" target="_blank" rel="noopener">CHIRPS</a> — UCSB Climate Hazards Center, monthly, 5 km</dd>
+
+        <dt>County boundary geometry</dt>
+        <dd><a href="https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html" target="_blank" rel="noopener">US Census TIGER/Line</a>, served via the <a href="https://github.com/topojson/us-atlas" target="_blank" rel="noopener">us-atlas</a> TopoJSON build</dd>
+
+        <dt>State identifiers</dt>
+        <dd>US Census <strong>STATEFP</strong> codes — 19&nbsp;Iowa · 20&nbsp;Kansas · 48&nbsp;Texas</dd>
+
+        <dt>Extraction pipeline</dt>
+        <dd>All raster bands extracted via <a href="https://earthengine.google.com/" target="_blank" rel="noopener">Google Earth Engine</a> and aggregated to county-month means (5,496 rows)</dd>
+      </dl>
+
+      <p class="footer-meta">Zihan Zhang · Baoyi Wan · Kangxin Peng · Yadushan Thillainathan</p>
     </div>
   </footer>
 
