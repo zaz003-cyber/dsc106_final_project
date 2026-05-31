@@ -76,6 +76,7 @@
       <h2 class="display">Three states feed a nation.</h2>
       <p class="lede">
         The backbone of a country is its agriculture. The United States, in particular, has some states responsible for a large part of it. 
+        AND farmers, and traders all depend on accurate climate data to predict crop turnout and fair market prices. 
         Iowa, Kansas, and Texas grow the corn in your tortilla chips, the wheat in your bread, and the cotton in your t-shirt. 
         Together, they form the engine that fuels American agriculture. 
         However, each state's agriculture is largely affected by the climate in which they grow.
@@ -145,7 +146,7 @@
             The big number beside each state is what is typically reported by most dashboards. 
             The colored texture across the state is the actual climate across
             458 counties. <strong>Hover over any county</strong>
-            to read the differene from the reported state mean.
+            to read the counties' means and gap from the states' mean.
           </p>
         </figcaption>
         <div id="county-choropleth-preview" class="map-frame"></div>
@@ -170,6 +171,7 @@
       <p class="kicker">The Resolution · Our flagship tool</p>
       <h2 class="display">A <span class="ink-blue">time machine</span> for America's farms.</h2>
       <p class="lede">
+        THEREFORE, we built this interactive dashboard as a "time machine" for America's farms. 
         Scroll through seven moments of the agricultural year or drive the
         visualization yourself. Hover over any county to see its entire 12-month story
         unfold in the panel below.
@@ -311,7 +313,7 @@
       <p class="kicker">The Relationships</p>
       <h2 class="display">Heat and rain do not love crops equally.</h2>
       <p class="lede">
-        Each dot is one state in one month. The line connecting points is an indicator 
+        Each faint background small dot is one county in one month. Each numbered bubbles from 1 to 12 is one state in one month. The line with arrow connecting points is an indicator 
         of time sequence from January to December. By observing what happens when we isolate
         a single crop, we begin to see three very different stories of the relationship between climate and vegetation.
       </p>
@@ -345,8 +347,7 @@
         <p class="figure-note" id="scatter-note">
           Texas is consistently the hottest every month, but Iowa's more moderate
             daytime soil temperatures push NDVI the highest.
-            <strong>Heat alone doesn't decide greenness. Crop choice and
-            moisture act as limiting factors.</strong>
+            <strong>Pure heat doesn't decide greenness. it’s the timing of warmth for emergence and the avoidance of heat stress during peak and harvest.</strong>
         </p>
         <div id="scatter-main" class="scatter-frame"></div>
       </figure>
@@ -373,7 +374,7 @@
         Plants respire after dark. The wider the day and night gap in
         <strong>land surface temperature</strong>, the more
         energy crops burn just to stay alive intead of building grain or fiber. Below, each panel splits day-time LST
-        from night-time LST for every month of 2023.
+        from night-time LST for every month of 2023. (Remember the difference of NDVI trend of cool night state Iowa and warm night state Texas from above scatterplot)
       </p>
     </div>
     <div class="container wide">
@@ -406,9 +407,9 @@
           <p>
             Texas is consistently hotter than Iowa, but Iowa's NDVI peaks higher.
             Crop choice, the timing of rain, and even the night-time chill
-            matter just as much as raw daytime heat. The same
+            matter just as much as raw daytime heat. Around
             <span class="temp" data-c="30">30 °C</span> result in thriving corn in
-            Iowa, who gets plenty of water and less bounfitful cotton across West Texas, which suffers from less water.
+            Iowa, who gets plenty of water and less bounfitful cotton across West Texas, which suffers from less water from June to August.
           </p>
         </article>
         <article class="takeaway-card">
@@ -417,9 +418,9 @@
           <p>
             Texas night-time LST stays above
             <span class="temp" data-c="20">20 °C</span> from June through
-            September, denying cotton the cool hours plants use to recover.
+            September, denying cotton the cool hours plants use to recover. Resulting in lower NDVI. 
             Iowa's nights, by contrast, average
-            <span class="temp" data-c="18">18 °C</span> even in July which gives the corn overnight which can readily be seen.
+            <span class="temp" data-c="18">18 °C</span> even in July which gives the corn peak which can readily be seen.
           </p>
         </article>
       </div>
