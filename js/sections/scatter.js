@@ -29,8 +29,7 @@ const VAR_META = {
     get subHtml() { return `Land Surface Temp — Day (<span class="unit-text">${TempUnit.unitLabel()}</span>) on x-axis · NDVI on y-axis`; },
     noteHtml: `Texas runs hottest every month — yet Iowa's more moderate
       daytime soil temperatures push NDVI the highest.
-      <strong>Pure heat doesn't decide greenness; crop choice and
-      moisture set the ceiling.</strong>`,
+      <strong>Pure heat doesn't decide greenness; it’s the timing of warmth for emergence and the avoidance of heat stress during peak and harvest.</strong>`,
   },
   LST_Night: {
     xKey: 'LST_Night',
@@ -40,7 +39,8 @@ const VAR_META = {
     get subHtml() { return `Land Surface Temp — Night (<span class="unit-text">${TempUnit.unitLabel()}</span>) on x-axis · NDVI on y-axis`; },
     noteHtml: `Day and Night LST track each other tightly across counties —
       yet plot Night against NDVI and the cluster grows visibly
-      tighter.
+      tighter. When nights are cool in state Iowa, crops spend less energy on respiration, so they stay green longer at a higher level then declines more slowly compared to that of day. 
+      When nights are warm in state Texas — even if days are perfectly hot for growth — crops mature too fast and peak at May, reach a lower maximum greenness, and are ready to harvest earlier.
       <strong>Plants feel the night more than they feel the day.</strong>`,
   },
   Precipitation: {

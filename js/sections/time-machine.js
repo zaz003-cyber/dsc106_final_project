@@ -25,7 +25,7 @@ const SCENES = [
     month: 3, varKey: 'LST_Day',
     eyebrow: 'March · Daytime Temperature',
     title: 'The South wakes first.',
-    body: `By March, Texas daytime soil temperatures average <span class="temp" data-c="27">27 °C</span> while Iowa's are still cold at <span class="temp" data-c="10">10 °C</span>. That <span class="temp-delta" data-c="17">17 °C</span> gradient is wide enough that Texas cotton growers are already preparing fields when Iowa corn growers cannot yet break ground — and it dictates when each crop can begin.`,
+    body: 'By March, Texas counties already average 27 °C while Iowa hovers near freezing. The 17-degree gradient between Iowa and Texas is the largest of the entire year — and it dictates when each crop can begin. (Check NDVI graphs)',
   },
   {
     month: 4, varKey: 'NDVI', focus: 'Texas',
@@ -43,13 +43,13 @@ const SCENES = [
     month: 8, varKey: 'LST_Day', focus: 'Texas',
     eyebrow: 'August · Daytime Temperature',
     title: 'Texas bakes.',
-    body: `Cotton is heat-tolerant — but the average Texas daytime LST in August hits <span class="temp" data-c="41">41 °C</span>, and West Texas climbs past <span class="temp" data-c="47">47 °C</span>. The land surface is literally too hot to comfortably touch.`,
+    body: 'Cotton is heat-tolerant — but the average Texas daytime LST in August hits 41 °C, and West Texas climbs past 47 °C. The land surface is literally too hot to comfortably touch. (Check NDVI from Jul to Sep to see decrease in Aug and increase in Sep of NDVI in eastern counties in Texas)',
   },
   {
     month: 10, varKey: 'Precipitation',
     eyebrow: 'October · Precipitation',
     title: 'The autumn rains shift south.',
-    body: `As Iowa harvests its corn and Kansas plants new winter wheat, the rain belt drifts toward Texas. Late-season moisture is critical for cotton boll development — without it, the year's yield collapses.`,
+    body: 'As Iowa harvests its corn and Kansas plants new winter wheat, the rain belt drifts toward Texas. Late-season moisture is critical for cotton boll development — without it, the year\'s yield collapses. (Check decrease of NDVI in Iowa and Kansas from Sep to Nov; increase in darker NDVI areas from Oct to Nov in Texas)',
   },
   {
     month: 7, varKey: 'NDVI', free: true,
